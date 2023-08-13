@@ -2,33 +2,41 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAXVEICOLI 512;
+
 #define RED 0
 #define BLACK 1
 
-struct st{
-    int dist;
-    car *root;
-    st *next;
-    st *prev;
-};
+#define ADDS "aggiungi-stazione"
+#define DELS "demolisci-stazione"
+#define ADDA "aggiungi-auto"
+#define DELA "rottama-auto"
+#define PLAN "pianifica-percorso"
 
-struct car{
+typedef struct st{
+    int dist;
+    struct car *root;
+    struct st *next;
+    struct st *prev;
+}station;
+
+typedef struct c{
     int color;
     int autonomy;
-    car *dad;
-    car *left;
-    car *right;
-};
+    struct c *dad;
+    struct c *left;
+    struct c *right;
+}car;
 
-struct car *root;
-struct car *NIL;
+station *head;
+car *NIL;
 
 //Gestione lista doppiamente concatenata
-void insertL(station* l, int d);
+void insertL(station *l, int d);
 void deleteL(station* l, int d);
-bool exists(station* l, int d);
+int exists(station* l, int d);
 station* searchL(station* l, int d);
 
 //Gestione RB tree
@@ -49,11 +57,27 @@ char* addCar(int d, int a);                //aggiumge l'auto a alla stazione di 
 char* scrapCar(int d, int a);                 //rimuove l'auto a dalla stazione di distanza d
 void planRoute(int d1, int d2);        //trova il percorso più efficiente da d1 a d2
 
-bool esiste_s(int d);                              //controlla se esiste una stazione alla distanza d
-bool esiste_a(int d, int a);                       //controlla se esiste un'auto di autonomia a nella stazione d
-
+//Main------------------------------------------------------------------------------------------------------------------
 
 int main(int argc, char* argv[]){
+
+    head = malloc(sizeof(station));
+    head->prev = NULL;
+    head->next = NULL;
+
+    NIL = malloc(sizeof(car));
+    NIL->left = NULL;
+    NIL->right = NULL;
+    NIL->dad = NULL;
+    head->root = NIL;
+
+
+
+
+
+
+
+
 
 }
 
@@ -61,7 +85,7 @@ int main(int argc, char* argv[]){
 
 void insertL(station* l, int d){
     station *tmp, *curr, *app;
-    tmp = malloc(sizeof(stations));
+    tmp = malloc(sizeof(station));
     if(tmp != NULL){
         tmp->dist = d;
         if(l == NULL){
@@ -87,7 +111,7 @@ void insertL(station* l, int d){
     }else
         printf("non aggiunta\n");
 
-    printf("aggiunta\n")
+    printf("aggiunta\n");
 }
 
 void deleteL(station* l, int d){
@@ -107,17 +131,17 @@ void deleteL(station* l, int d){
     printf("demolita\n");
 }
 
+int exists(station* l, int d){
 
-bool exists(station* l, int d){
-    for(tmp = l; tmp->next != NULL; tmp = tmp->next)
+    for(station *tmp = l; tmp->next != NULL; tmp = tmp->next)
         if(tmp->dist == d)
-            return true;
+            return 1;
 
-    return false;
+    return 0;
 }
 
 station* searchL(station* l, int d){
-    for(tmp = l; tmp->next != NULL; tmp = tmp->next)
+    for(station *tmp = l; tmp->next != NULL; tmp = tmp->next)
         if(tmp->dist == d)
             return tmp;
 }
@@ -127,7 +151,6 @@ station* searchL(station* l, int d){
 car *createNode(car **root, int a){
 
 }
-
 
 void insertRB(car **root, car *el){
     car *x = *root;
@@ -153,7 +176,7 @@ void insertRB(car **root, car *el){
     el->right = NIL;
     el->color = RED;
 
-    fixupRB(root, el);
+    insertFixupRB(root, el);
 
     return;
 }
@@ -222,7 +245,7 @@ void deleteRB(car **root, car *el){
 
     if(y->dad == NIL)
         *root = x;
-    else if(y = y->dad->left)
+    else if(y == y->dad->left)
         y->dad->left = x;
     else
         y->dad->right = x;
@@ -231,7 +254,6 @@ void deleteRB(car **root, car *el){
         el->autonomy = y->autonomy;
     if(y->color == BLACK)
         deleteFixupRB(*root, x);
-    return y;
 }
 
 void deleteFixupRB(car **root, car *el){
@@ -282,7 +304,6 @@ void deleteFixupRB(car **root, car *el){
         rightRotate(*root, el->dad);
     }
 }
-
 
 void leftRotate(car **root, car *el){
     car *y = el->right;
@@ -368,12 +389,4 @@ char* rottamaAuto(int d, int a){
         return "rottamata";
     }else
         return "non demolita";
-}
-
-bool esiste_s(int d){
-
-}
-
-bool esiste_a(int d, int a){
-
 }
