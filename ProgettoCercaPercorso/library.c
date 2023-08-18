@@ -14,6 +14,7 @@
 #define ADDA "aggiungi-auto"
 #define DELA "rottama-auto"
 #define PLAN "pianifica-percorso"
+#define MAXCHAR 18
 
 typedef struct st{
     int dist;
@@ -34,13 +35,13 @@ station *head;
 car *NIL;
 
 //Gestione lista doppiamente concatenata
-void insertL(station *l, int d);
-void deleteL(station* l, int d);
+int insertL(station *l, int d);
+int deleteL(station* l, int d);
 int exists(station* l, int d);
 station* searchL(station* l, int d);
 
 //Gestione RB tree
-car* createNode(car **root, int a);
+car* createNode(int a);
 void insertRB(car **root, car *el);
 void insertFixupRB(car **root, car *el);
 void deleteRB(car **root, car *el);
@@ -48,13 +49,14 @@ void deleteFixupRB(car **root, car *el);
 void leftRotate(car **root, car *el);
 void rightRotate(car **root, car *el);
 car *treeSuccessor(car *el);
+int existsRB(car *root, int a);
+car* searchRB(car *root, int a);
 
 
-
-char* addStation(int d, int n, int* a);    //aggiunge una stazione alla distanza d, con n macchine di autonomia a[i]
-char* demolishStation(int d);                  //demolisce la stazione alla distanza d
-char* addCar(int d, int a);                //aggiumge l'auto a alla stazione di distanza d
-char* scrapCar(int d, int a);                 //rimuove l'auto a dalla stazione di distanza d
+void addStation(station *l, int d);    //aggiunge una stazione alla distanza d, con n macchine di autonomia a[i]
+void demolishStation(station *l, int d);                  //demolisce la stazione alla distanza d
+void addCar(car **root, int a);                //aggiumge l'auto a alla stazione di distanza d
+void scrapCar(car **root, int a);                 //rimuove l'auto a dalla stazione di distanza d
 void planRoute(int d1, int d2);        //trova il percorso più efficiente da d1 a d2
 
 //Main------------------------------------------------------------------------------------------------------------------
@@ -71,19 +73,52 @@ int main(int argc, char* argv[]){
     NIL->dad = NULL;
     head->root = NIL;
 
+    int s, n;
+    char* in;
+    station* tmp;
+    in = malloc(sizeof(char)*(MAXCHAR+1));
 
+    s = scanf(" %s", &in);
 
+    while(s>0){
+        if(in[0] == 'a'){
+            if(in[9] == 's'){
+                scanf("%d", &n); //distanza
+                addStation(head, n);
+            }else if(in[9] == 'a'){
+                scanf("%d", &n); //distanza
+                tmp = searchL(head, n);
+                scanf("%d", &n); //autonomia
+                if(tmp != NULL)
+                    addCar(tmp->root, n);
+                else
+                    printf("non aggiunta");
+            }
+        }else if(in[0] == 'd'){
+            scanf("%d", &n); //distanza
+            demolishStation(head, n);
+        }else if(in[0] == 'r'){
+            scanf("%d", &n); //distanza
+            tmp = searchL(head, n);
+            scanf("%d", &n); //autonomia
+            if(tmp != NULL)
+                scrapCar(tmp->root, n);
+            else
+                printf("non rottamata");
+        }else if(in[0] == 'p'){
 
+        }else
+            printf("error while reading\n");
 
+        s = scanf(" %s", &in);
+    }
 
-
-
-
+    return 0;
 }
 
 //Gestione liste--------------------------------------------------------------------------------------------------------
 
-void insertL(station* l, int d){
+int insertL(station* l, int d){
     station *tmp, *curr, *app;
     tmp = malloc(sizeof(station));
     if(tmp != NULL){
@@ -96,7 +131,7 @@ void insertL(station* l, int d){
 
             if(!exists(l, d)){  //potrei controllare nel for successivo per diminuire i tempi
                 for(curr=l; curr->next != NULL; curr = curr->next){
-                    if(tmp->dist > curr->dist){
+                    if(tmp->dist < curr->dist){ //ordine decrescente
                         app = curr->next;
                         curr->next = tmp;
                         tmp->prev = curr;
@@ -106,19 +141,19 @@ void insertL(station* l, int d){
                     }
                 }
             }else
-                printf("non aggiunta\n");
+                return 0;
         }
     }else
-        printf("non aggiunta\n");
+        return 0;
 
-    printf("aggiunta\n");
+    return 1;
 }
 
-void deleteL(station* l, int d){
+int deleteL(station* l, int d){
     station *tmp;
 
     if(!exists(l, d) || l == NULL)
-        printf("non demolita\n");
+        return 0;
     else{
         for(tmp = l; tmp->next != NULL; tmp = tmp->next)
             if(tmp->dist == d){
@@ -128,10 +163,10 @@ void deleteL(station* l, int d){
             }
     }
 
-    printf("demolita\n");
+    return 1;
 }
 
-int exists(station* l, int d){
+int existsL(station* l, int d){
 
     for(station *tmp = l; tmp->next != NULL; tmp = tmp->next)
         if(tmp->dist == d)
@@ -144,12 +179,21 @@ station* searchL(station* l, int d){
     for(station *tmp = l; tmp->next != NULL; tmp = tmp->next)
         if(tmp->dist == d)
             return tmp;
+    return NULL;
 }
 
 //Gestione RB tree------------------------------------------------------------------------------------------------------
 
-car *createNode(car **root, int a){
+car *createNode(int a){
+    car* new = NULL;
+    new = malloc(sizeof(car));
+    new->left = NULL;
+    new->right = NULL;
+    new->dad = NULL;
+    new->color = RED;
+    new->autonomy = a;
 
+    return new;
 }
 
 void insertRB(car **root, car *el){
@@ -355,38 +399,82 @@ car *treeSuccessor(car *el){
     return y;
 }
 
+int existsRB(car *root, int a){
+    int flag = 0;
+    car *curr;
+    curr = root;
+    while(curr != NIL){
+        if(curr->autonomy == a)
+            flag = 1;
+        else if(curr->autonomy < a)
+            curr = curr->right;
+        else
+            curr = curr->left;
+    }
+    return flag;
+}
+
+car* searchRB(car *root, int a){
+    car *curr;
+    curr = root;
+    while(curr != NIL){
+        if(curr->autonomy == a)
+            return curr;
+        else if(curr->autonomy < a)
+            curr = curr->right;
+        else
+            curr = curr->left;
+    }
+    return NIL;
+}
+
 //Other functions-------------------------------------------------------------------------------------------------------
 
-char* aggiungiStazione(int d, int n, int* a){
-    if(!esiste(d)){
-        //do
-        return "aggiunta";
+void addStation(station *l, int d){
+
+    int n, a;
+    station *app;
+
+    if(insertL(l, d) == 0){
+        printf("non aggiunta\n");
+    }else{
+
+        scanf("%d", &n);
+        app = searchL(l, d);
+
+        for(int i=0; i<n; i++){
+            scanf("%d", &a);
+            insertRB(&(app->root), createNode(a));
+        }
+
+        printf("aggiunta\n");
     }
+}
+
+void demolishStation(station *l, int d){
+
+    int flag;
+    flag = deleteL(l, d);
+    if(flag)
+        printf("demolita\n");
     else
-        return "non aggiunta";
-
+        printf("non demolita\n");
 }
 
-char* demolisciStazione(int d){
-    if(esiste(d)){
-        //do
-        return "demolita";
-    }else
-        return "non demolita";
+void addCar(car **root, int a){
+    if(!existsRB(*root, a)){
+        car *x = createNode(a);
+        insertRB(*root, x);
+    }
+    printf("aggiunta\n");
 }
 
-char* aggiungiAuto(int d, int a){
-    if(esiste(d)){
-        //do
-        return "aggiunta";
-    }else
-        return "non aggiunta";
-}
+void scrapCar(car **root, int a){
 
-char* rottamaAuto(int d, int a){
-    if(esiste_s(d) && ){
-        //do
-        return "rottamata";
+    car *tmp = searchRB(*root, a);
+    if(tmp != NIL){
+        deleteRB(root, tmp);
+        printf("rottamata");
     }else
-        return "non demolita";
+        printf("non rottamata");
 }
