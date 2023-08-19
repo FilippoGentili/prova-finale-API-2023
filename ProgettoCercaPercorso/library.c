@@ -39,6 +39,8 @@ int insertL(station *l, int d);
 int deleteL(station* l, int d);
 int exists(station* l, int d);
 station* searchL(station* l, int d);
+int length(station *l);
+void printL(station *l);
 
 //Gestione RB tree
 car* createNode(int a);
@@ -57,7 +59,10 @@ void addStation(station *l, int d);    //aggiunge una stazione alla distanza d, 
 void demolishStation(station *l, int d);                  //demolisce la stazione alla distanza d
 void addCar(car **root, int a);                //aggiumge l'auto a alla stazione di distanza d
 void scrapCar(car **root, int a);                 //rimuove l'auto a dalla stazione di distanza d
-void planRoute(int d1, int d2);        //trova il percorso più efficiente da d1 a d2
+station *planRoute(station *l);        //trova il percorso più efficiente da d1 a d2
+void rec_plan(station *l, station *route, station *def, int dest);
+station *findReachable(station *l);
+station *chooseBest(station *x, station *y);
 
 //Main------------------------------------------------------------------------------------------------------------------
 
@@ -106,7 +111,9 @@ int main(int argc, char* argv[]){
             else
                 printf("non rottamata");
         }else if(in[0] == 'p'){
-
+            scanf("%d", &in);
+            tmp = searchL(head, in);
+            printL(planRoute(tmp)); //prendo in ingresso il nodo della stazione di partenza
         }else
             printf("error while reading\n");
 
@@ -131,7 +138,7 @@ int insertL(station* l, int d){
 
             if(!exists(l, d)){  //potrei controllare nel for successivo per diminuire i tempi
                 for(curr=l; curr->next != NULL; curr = curr->next){
-                    if(tmp->dist < curr->dist){ //ordine decrescente
+                    if(tmp->dist > curr->dist){ //ordine crescente
                         app = curr->next;
                         curr->next = tmp;
                         tmp->prev = curr;
@@ -180,6 +187,22 @@ station* searchL(station* l, int d){
         if(tmp->dist == d)
             return tmp;
     return NULL;
+}
+
+int length(station *l){
+    int count=0;
+    for(station *tmp = l; tmp!=NULL; tmp=tmp->next)
+        count++;
+    return count;
+}
+
+void printL(station *l){
+    station *tmp = l;
+
+    while(tmp->next != NULL)
+        printf(" %d", tmp->dist);
+
+    printf("\n");
 }
 
 //Gestione RB tree------------------------------------------------------------------------------------------------------
@@ -477,4 +500,84 @@ void scrapCar(car **root, int a){
         printf("rottamata");
     }else
         printf("non rottamata");
+}
+
+station* planRoute(station *l){
+    int dest, minStep, currStep=0;
+    station *curr;
+    station *fin;
+
+    fin = malloc(sizeof(station));
+    fin->next = NULL;
+    fin->prev = NULL;
+
+    insertL(curr, l);
+    scanf("%d", &dest);
+
+    rec_plan(l, curr, fin, dest);
+
+    return fin;
+}
+
+void rec_plan(station *l, station *route, station *def, int dest){
+
+    station *curr = findReachable(l);
+
+    if(existsL(curr, dest)){
+        insertL(route, dest);
+        if(length(route) < length(def) || length(def) == 0){
+            def = route;    //da fare la free del vecchio def?
+        }else if(length(route) == length(def)){
+            def = chooseBest(route, def);
+        }
+        return;
+    }else{
+        for(station *tmp = l; tmp != NULL; tmp = tmp->next){
+            insertL(route, tmp->dist);
+            rec_plan(tmp, route, dest);
+            deleteL(route, tmp->dist);
+        }
+    }
+}
+
+station *findReachable(station *l){
+
+    int in, a;
+    car *tmp;
+    station *reach = malloc(sizeof(station));
+    reach->next = NULL;
+    reach->prev = NULL;
+
+    in = l->dist;
+    tmp = l->root;
+    while(tmp->right != NIL)
+        tmp = tmp->right;
+
+    a = tmp->autonomy;
+
+    for(station *curr = l; (curr->dist - in) < a; curr = curr->next){
+        insertL(reach, curr->dist);
+    }
+
+    return reach;
+}
+
+station *chooseBest(station *x, station *y){
+
+    station *a = x;
+    station *b = y;
+
+    while(a->next != NULL){ //hanno stessa lunghezza
+        a = a->next;
+        b = b->next;
+    }
+
+    while(a->prev != NULL){
+        if(a->dist != b->dist)
+            if(a->dist < b->dist)
+                return x;
+            else
+                return y;
+    }
+
 }
