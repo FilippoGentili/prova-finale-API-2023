@@ -61,7 +61,9 @@ void addCar(car **root, int a);                //aggiumge l'auto a alla stazione
 void scrapCar(car **root, int a);                 //rimuove l'auto a dalla stazione di distanza d
 station *planRoute(station *l);        //trova il percorso più efficiente da d1 a d2
 void rec_plan(station *l, station *route, station *def, int dest);
+void rec_plan_back(station *l, station *route, station *def, int dest);
 station *findReachable(station *l);
+station *findReachable_back(station *l);
 station *chooseBest(station *x, station *y);
 
 //Main------------------------------------------------------------------------------------------------------------------
@@ -514,7 +516,10 @@ station* planRoute(station *l){
     insertL(curr, l);
     scanf("%d", &dest);
 
-    rec_plan(l, curr, fin, dest);
+    if(l->dist < dest)
+        rec_plan(l, curr, fin, dest);
+    else
+        rec_plan_back(l, curr, fin, dest);
 
     return fin;
 }
@@ -534,7 +539,27 @@ void rec_plan(station *l, station *route, station *def, int dest){
     }else{
         for(station *tmp = l; tmp != NULL; tmp = tmp->next){
             insertL(route, tmp->dist);
-            rec_plan(tmp, route, dest);
+            rec_plan(tmp, route, def, dest);
+            deleteL(route, tmp->dist);
+        }
+    }
+}
+
+void rec_plan_back(station *l, station *route, station *def, int dest){
+    station *curr = findReachable_back(l);
+
+    if(existsL(curr, dest)){
+        insertL(route, dest);
+        if(length(route) < length(def) || length(def) == 0){
+            def = route;    //da fare la free del vecchio def?
+        }else if(length(route) == length(def)){
+            def = chooseBest(route, def);
+        }
+        return;
+    }else{
+        for(station *tmp = l; tmp != NULL; tmp = tmp->prev){
+            insertL(route, tmp->dist);
+            rec_plan(tmp, route, def, dest);
             deleteL(route, tmp->dist);
         }
     }
@@ -556,6 +581,28 @@ station *findReachable(station *l){
     a = tmp->autonomy;
 
     for(station *curr = l; (curr->dist - in) < a; curr = curr->next){
+        insertL(reach, curr->dist);
+    }
+
+    return reach;
+}
+
+station *findReachable_back(station *l){
+
+    int in, a;
+    car *tmp;
+    station *reach = malloc(sizeof(station));
+    reach->next = NULL;
+    reach->prev = NULL;
+
+    in = l->dist;
+    tmp = l->root;
+    while(tmp->right != NIL)
+        tmp = tmp->right;
+
+    a = tmp->autonomy;
+
+    for(station *curr = l; abs(curr->dist - in) < a; curr = curr->prev){
         insertL(reach, curr->dist);
     }
 
