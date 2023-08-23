@@ -42,6 +42,7 @@ int existsL(station* l, int d);
 station* searchL(station* l, int d);
 int length(station *l);
 void printL(station *l);
+void destroyL(station *l);
 
 //Gestione RB tree
 car* createNode(int a);
@@ -54,6 +55,7 @@ void rightRotate(car **root, car *el);
 car *treeSuccessor(car *el);
 int existsRB(car *root, int a);
 car* searchRB(car *root, int a);
+void destroyRB(car *root);
 
 
 void addStation(station *l, int d);    //aggiunge una stazione alla distanza d, con n macchine di autonomia a[i]
@@ -123,6 +125,9 @@ int main(int argc, char* argv[]){
 
         s = scanf(" %s", in);
     }
+
+    destroyL(head);
+    destroyRB(NIL);
 
     return 0;
 }
@@ -207,6 +212,17 @@ void printL(station *l){
         printf(" %d", tmp->dist);
 
     printf("\n");
+}
+
+void destroyL(station *l){
+    station *succ;
+
+    while(l != NULL){
+        succ = l->next;
+        destroyRB(l->root);
+        free(l);
+        l = succ;
+    }
 }
 
 //Gestione RB tree------------------------------------------------------------------------------------------------------
@@ -325,6 +341,8 @@ void deleteRB(car **root, car *el){
         el->autonomy = y->autonomy;
     if(y->color == BLACK)
         deleteFixupRB(root, x);
+
+    free(el);
 }
 
 void deleteFixupRB(car **root, car *el){
@@ -453,6 +471,19 @@ car* searchRB(car *root, int a){
             curr = curr->left;
     }
     return NIL;
+}
+
+void destroyRB(car *root){
+
+    if(root->left == NULL && root->right == NULL)
+        free(root);
+    else{
+        if(root->left != NULL)
+            destroyRB(root->left);
+
+        if(root->right != NULL)
+            destroyRB(root->right);
+    }
 }
 
 //Other functions-------------------------------------------------------------------------------------------------------
