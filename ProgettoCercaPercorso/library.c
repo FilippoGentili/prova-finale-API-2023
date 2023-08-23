@@ -1,10 +1,9 @@
-#include "library.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <math.h>
 
-#define MAXVEICOLI 512;
+#define MAXVEICOLI 512
 
 #define RED 0
 #define BLACK 1
@@ -16,13 +15,6 @@
 #define PLAN "pianifica-percorso"
 #define MAXCHAR 18
 
-typedef struct st{
-    int dist;
-    struct car *root;
-    struct st *next;
-    struct st *prev;
-}station;
-
 typedef struct c{
     int color;
     int autonomy;
@@ -31,13 +23,22 @@ typedef struct c{
     struct c *right;
 }car;
 
+typedef struct st{
+    int dist;
+    car *root;
+    struct st *next;
+    struct st *prev;
+}station;
+
+
+
 station *head;
 car *NIL;
 
 //Gestione lista doppiamente concatenata
 int insertL(station *l, int d);
 int deleteL(station* l, int d);
-int exists(station* l, int d);
+int existsL(station* l, int d);
 station* searchL(station* l, int d);
 int length(station *l);
 void printL(station *l);
@@ -85,41 +86,42 @@ int main(int argc, char* argv[]){
     station* tmp;
     in = malloc(sizeof(char)*(MAXCHAR+1));
 
-    s = scanf(" %s", &in);
+    s = scanf(" %s", in);
 
     while(s>0){
         if(in[0] == 'a'){
             if(in[9] == 's'){
-                scanf("%d", &n); //distanza
+                s = scanf("%d", &n); //distanza
                 addStation(head, n);
             }else if(in[9] == 'a'){
-                scanf("%d", &n); //distanza
+                s = scanf("%d", &n); //distanza
                 tmp = searchL(head, n);
-                scanf("%d", &n); //autonomia
+                s = scanf("%d", &n); //autonomia
                 if(tmp != NULL)
-                    addCar(tmp->root, n);
+                    addCar(&(tmp->root), n);
                 else
                     printf("non aggiunta");
             }
         }else if(in[0] == 'd'){
-            scanf("%d", &n); //distanza
+            s = scanf("%d", &n); //distanza
             demolishStation(head, n);
         }else if(in[0] == 'r'){
-            scanf("%d", &n); //distanza
+            s = scanf("%d", &n); //distanza
             tmp = searchL(head, n);
-            scanf("%d", &n); //autonomia
+            s = scanf("%d", &n); //autonomia
             if(tmp != NULL)
-                scrapCar(tmp->root, n);
+                scrapCar(&(tmp->root), n);
             else
                 printf("non rottamata");
         }else if(in[0] == 'p'){
-            scanf("%d", &in);
-            tmp = searchL(head, in);
-            printL(planRoute(tmp)); //prendo in ingresso il nodo della stazione di partenza
+            s = scanf("%d", &n);
+            tmp = searchL(head, n);
+            tmp = planRoute(tmp);
+            printL(tmp); //prendo in ingresso il nodo della stazione di partenza
         }else
             printf("error while reading\n");
 
-        s = scanf(" %s", &in);
+        s = scanf(" %s", in);
     }
 
     return 0;
@@ -138,7 +140,7 @@ int insertL(station* l, int d){
             l = tmp;
         }else{
 
-            if(!exists(l, d)){  //potrei controllare nel for successivo per diminuire i tempi
+            if(existsL(l, d) == 0){  //potrei controllare nel for successivo per diminuire i tempi
                 for(curr=l; curr->next != NULL; curr = curr->next){
                     if(tmp->dist > curr->dist){ //ordine crescente
                         app = curr->next;
@@ -161,7 +163,7 @@ int insertL(station* l, int d){
 int deleteL(station* l, int d){
     station *tmp;
 
-    if(!exists(l, d) || l == NULL)
+    if(existsL(l, d) == 0 || l == NULL)
         return 0;
     else{
         for(tmp = l; tmp->next != NULL; tmp = tmp->next)
@@ -264,16 +266,16 @@ void insertFixupRB(car **root, car *el){
                     x->color = BLACK;
                     y->color = RED;
                     x->dad->color = RED;
-                    insertFixupRB(*root, x->dad);
+                    insertFixupRB(root, x->dad);
                 }else{
                     if(el == x->right){
                         el = x;
-                        leftRotate(*root, el);
+                        leftRotate(root, el);
                         x = el->dad;
                     }
                     x->color = BLACK;
                     x->dad->color = RED;
-                    rightRotate(*root, el);
+                    rightRotate(root, el);
                 }
             }else{
                 y = x->dad->left;
@@ -281,16 +283,16 @@ void insertFixupRB(car **root, car *el){
                     x->color = BLACK;
                     y->color = RED;
                     x->dad->color = RED;
-                    insertFixupRB(*root, x->dad);
+                    insertFixupRB(root, x->dad);
                 }else{
                     if(el == x->left){
                         el = x;
-                        rightRotate(*root, el);
+                        rightRotate(root, el);
                         x = el->dad;
                     }
                     x->color = BLACK;
                     x->dad->color = RED;
-                    leftRotate(*root, el);
+                    leftRotate(root, el);
                 }
             }
         }
@@ -322,7 +324,7 @@ void deleteRB(car **root, car *el){
     if(y != el)
         el->autonomy = y->autonomy;
     if(y->color == BLACK)
-        deleteFixupRB(*root, x);
+        deleteFixupRB(root, x);
 }
 
 void deleteFixupRB(car **root, car *el){
@@ -336,41 +338,41 @@ void deleteFixupRB(car **root, car *el){
         if(w->color == RED){
             w->color = BLACK;
             el->dad->color = RED;
-            leftRotate(*root, el->dad);
+            leftRotate(root, el->dad);
             w = el->dad->right;
         }
         if(w->left->color == BLACK && w->right->color){
             w->color = RED;
-            deleteFixupRB(*root, el->dad);
+            deleteFixupRB(root, el->dad);
         }else if(w->right->color == BLACK){
             w->left->color = BLACK;
             w->color = RED;
-            rightRotate(*root, w);
+            rightRotate(root, w);
             w = el->dad->right;
         }
         w->color = el->dad->color;
         el->dad->color = BLACK;
-        leftRotate(*root, el->dad);
+        leftRotate(root, el->dad);
     }else{
         w = el->dad->left;
         if(w->color == RED){
             w->color = BLACK;
             el->dad->color = RED;
-            rightRotate(*root, el->dad);
+            rightRotate(root, el->dad);
             w = el->dad->left;
         }
         if(w->right->color == BLACK && w->left->color){
             w->color = RED;
-            deleteFixupRB(*root, el->dad);
+            deleteFixupRB(root, el->dad);
         }else if(w->left->color == BLACK){
             w->right->color = BLACK;
             w->color = RED;
-            leftRotate(*root, w);
+            leftRotate(root, w);
             w = el->dad->left;
         }
         w->color = el->dad->color;
         el->dad->color = BLACK;
-        rightRotate(*root, el->dad);
+        rightRotate(root, el->dad);
     }
 }
 
@@ -457,22 +459,25 @@ car* searchRB(car *root, int a){
 
 void addStation(station *l, int d){
 
-    int n, a;
+    int n, a, s;
     station *app;
 
     if(insertL(l, d) == 0){
         printf("non aggiunta\n");
     }else{
 
-        scanf("%d", &n);
-        app = searchL(l, d);
+        s = scanf("%d", &n);
+        if(s!=0){
+            app = searchL(l, d);
 
-        for(int i=0; i<n; i++){
-            scanf("%d", &a);
-            insertRB(&(app->root), createNode(a));
+            for(int i=0; i<n; i++){
+                s = scanf("%d", &a);
+                insertRB(&(app->root), createNode(a));
+            }
+
+            printf("aggiunta\n");
         }
 
-        printf("aggiunta\n");
     }
 }
 
@@ -487,9 +492,9 @@ void demolishStation(station *l, int d){
 }
 
 void addCar(car **root, int a){
-    if(!existsRB(*root, a)){
+    if(existsRB(*root, a) == 0){
         car *x = createNode(a);
-        insertRB(*root, x);
+        insertRB(root, x);
     }
     printf("aggiunta\n");
 }
@@ -505,21 +510,27 @@ void scrapCar(car **root, int a){
 }
 
 station* planRoute(station *l){
-    int dest, minStep, currStep=0;
+    int dest, s;
     station *curr;
     station *fin;
+
+    curr = malloc(sizeof(station));
+    curr->next = NULL;
+    curr->prev = NULL;
 
     fin = malloc(sizeof(station));
     fin->next = NULL;
     fin->prev = NULL;
 
-    insertL(curr, l);
-    scanf("%d", &dest);
+    insertL(curr, l->dist);
+    s = scanf("%d", &dest);
 
-    if(l->dist < dest)
-        rec_plan(l, curr, fin, dest);
-    else
-        rec_plan_back(l, curr, fin, dest);
+    if(s!=0){
+        if(l->dist < dest)
+            rec_plan(l, curr, fin, dest);
+        else
+            rec_plan_back(l, curr, fin, dest);
+    }
 
     return fin;
 }
@@ -528,7 +539,7 @@ void rec_plan(station *l, station *route, station *def, int dest){
 
     station *curr = findReachable(l);
 
-    if(existsL(curr, dest)){
+    if(existsL(curr, dest) == 1){
         insertL(route, dest);
         if(length(route) < length(def) || length(def) == 0){
             def = route;    //da fare la free del vecchio def?
@@ -548,7 +559,7 @@ void rec_plan(station *l, station *route, station *def, int dest){
 void rec_plan_back(station *l, station *route, station *def, int dest){
     station *curr = findReachable_back(l);
 
-    if(existsL(curr, dest)){
+    if(existsL(curr, dest) == 1){
         insertL(route, dest);
         if(length(route) < length(def) || length(def) == 0){
             def = route;    //da fare la free del vecchio def?
@@ -620,11 +631,13 @@ station *chooseBest(station *x, station *y){
     }
 
     while(a->prev != NULL){
-        if(a->dist != b->dist)
+        if(a->dist != b->dist){
             if(a->dist < b->dist)
                 return x;
             else
                 return y;
+        }
     }
 
+    return NULL;
 }
